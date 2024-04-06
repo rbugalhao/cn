@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+// import google.protobuf
+import "google/protobuf/empty.proto";
+
+option java_multiple_files = true;
+option java_package = "servicestubs";
+
+package grpcservice; // package do proto
+
+service Forum {
+  // login a user
+  rpc loginUser(User) returns (Valid);
+  // register a user
+  rpc registerUser(User) returns (Valid);
+  // subscribe a topic
+  rpc topicSubscribe(SubscribeUnSubscribe) returns (stream ForumMessage);
+  // unsubscribe a topic
+  rpc topicUnSubscribe(SubscribeUnSubscribe) returns (stream ForumMessage);
+  // get all topics in server
+  rpc getAllTopics(google.protobuf.Empty) returns (ExistingTopics);
+  // send a message to a topic
+  rpc publishMessage(ForumMessage) returns (Valid);
+  // get all messages to a user
+  rpc getMessages(User) returns (stream ForumMessage);
+  // get subscribed topics of a user
+  rpc getSubscribedTopics(User) returns (ExistingTopics);
+}
+message SubscribeUnSubscribe {
+  string usrName = 1;
+  string topicName = 2;
+}
+message ExistingTopics {
+  // list of topic names
+  repeated string topicName = 1;
+}
+message ForumMessage {
+  string fromUser = 1;
+  string topicName = 2;
+  string txtMsg = 3;
+}
+message User {
+  string usrName = 1;
+  string password = 2;
+}
+message Valid {
+  bool valid = 1;
+}
+message Topic {
+  int32 id = 1;
+  string topicName = 2;
+}
+message Topics {
+  repeated string topicName = 1;
+}
+message UserLoged {
+  string usrName = 1;
+  string password = 2;
+  Topics topics = 3;
+}
