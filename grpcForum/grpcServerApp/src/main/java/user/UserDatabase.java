@@ -6,6 +6,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import topic.Topic;
 import topic.TopicDatabase;
+import utils.FileReader;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -16,17 +17,22 @@ import javax.xml.transform.stream.StreamResult;
 import java.io.File;
 import java.util.ArrayList;
 
+import static utils.Utils.*;
+
 public class UserDatabase {
 
     private final static String USERS_FILE = "src/main/xml/users.xml";
 
     public static User getUserById(int userId) {
         try {
-            File xmlFile = new File(USERS_FILE);
-            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-            Document doc = dBuilder.parse(xmlFile);
-            doc.getDocumentElement().normalize();
+//            File xmlFile = new File(USERS_FILE);
+//            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+//            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+//            Document doc = dBuilder.parse(xmlFile);
+//            doc.getDocumentElement().normalize();
+
+            FileReader fr = rw(READ, USERS_FILE, null, null);
+            Document doc = fr.doc;
 
             NodeList userList = doc.getElementsByTagName("user");
 
@@ -78,11 +84,14 @@ public class UserDatabase {
 
     public static boolean addUser(String username, String password) {
         try {
-            File xmlFile = new File(USERS_FILE);
-            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-            Document doc = dBuilder.parse(xmlFile);
-            doc.getDocumentElement().normalize();
+//            File xmlFile = new File(USERS_FILE);
+//            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+//            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+//            Document doc = dBuilder.parse(xmlFile);
+//            doc.getDocumentElement().normalize();
+
+            FileReader fr = rw(READ, USERS_FILE, null, null);
+            Document doc = fr.doc;
 
             // Get the root element (users)
             Element rootElement = doc.getDocumentElement();
@@ -112,11 +121,12 @@ public class UserDatabase {
             rootElement.appendChild(newUser);
 
             // Write the updated XML file
-            TransformerFactory transformerFactory = TransformerFactory.newInstance();
-            Transformer transformer = transformerFactory.newTransformer();
-            DOMSource source = new DOMSource(doc);
-            StreamResult result = new StreamResult(new File(USERS_FILE));
-            transformer.transform(source, result);
+//            TransformerFactory transformerFactory = TransformerFactory.newInstance();
+//            Transformer transformer = transformerFactory.newTransformer();
+//            DOMSource source = new DOMSource(doc);
+//            StreamResult result = new StreamResult(new File(USERS_FILE));
+//            transformer.transform(source, result);
+            rw(WRITE, null, doc, fr.xmlFile);
 
             System.out.println("New user added successfully.");
 
@@ -130,11 +140,14 @@ public class UserDatabase {
 
     public static void addTopicToUser(int userId, int topicId) {
         try {
-            File xmlFile = new File(USERS_FILE);
-            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-            Document doc = dBuilder.parse(xmlFile);
-            doc.getDocumentElement().normalize();
+//            File xmlFile = new File(USERS_FILE);
+//            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+//            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+//            Document doc = dBuilder.parse(xmlFile);
+//            doc.getDocumentElement().normalize();
+
+            FileReader fr = rw(READ, USERS_FILE, null, null);
+            Document doc = fr.doc;
 
             // Find the user element with the given ID
             Element userElement = findUserById(doc, userId);
@@ -151,11 +164,12 @@ public class UserDatabase {
                 topicsElement.appendChild(topicElement);
 
                 // Write the updated XML file
-                TransformerFactory transformerFactory = TransformerFactory.newInstance();
-                Transformer transformer = transformerFactory.newTransformer();
-                DOMSource source = new DOMSource(doc);
-                StreamResult result = new StreamResult(new File(USERS_FILE));
-                transformer.transform(source, result);
+//                TransformerFactory transformerFactory = TransformerFactory.newInstance();
+//                Transformer transformer = transformerFactory.newTransformer();
+//                DOMSource source = new DOMSource(doc);
+//                StreamResult result = new StreamResult(new File(USERS_FILE));
+//                transformer.transform(source, result);
+                rw(WRITE, null, doc, fr.xmlFile);
 
                 System.out.println("Topic added to user successfully.");
             } else {
@@ -169,11 +183,14 @@ public class UserDatabase {
 
     public static boolean checkTopicIsSubscribed(int userId, int topicId){
         try {
-            File xmlFile = new File(USERS_FILE);
-            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-            Document doc = dBuilder.parse(xmlFile);
-            doc.getDocumentElement().normalize();
+//            File xmlFile = new File(USERS_FILE);
+//            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+//            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+//            Document doc = dBuilder.parse(xmlFile);
+//            doc.getDocumentElement().normalize();
+
+            FileReader fr = rw(READ, USERS_FILE, null, null);
+            Document doc = fr.doc;
 
             NodeList userList = doc.getElementsByTagName("user");
 
@@ -219,11 +236,14 @@ public class UserDatabase {
     public static int getIdByUsername(String name){
 
         try {
-            File xmlFile = new File(USERS_FILE);
-            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-            Document doc = dBuilder.parse(xmlFile);
-            doc.getDocumentElement().normalize();
+//            File xmlFile = new File(USERS_FILE);
+//            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+//            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+//            Document doc = dBuilder.parse(xmlFile);
+//            doc.getDocumentElement().normalize();
+
+            FileReader fr = rw(READ, USERS_FILE, null, null);
+            Document doc = fr.doc;
 
             NodeList userList = doc.getElementsByTagName("user");
 
@@ -250,11 +270,14 @@ public class UserDatabase {
 
     public static void removeTopicFromUser(int userId, int topicId) {
         try {
-            File xmlFile = new File(USERS_FILE);
-            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-            Document doc = dBuilder.parse(xmlFile);
-            doc.getDocumentElement().normalize();
+//            File xmlFile = new File(USERS_FILE);
+//            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+//            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+//            Document doc = dBuilder.parse(xmlFile);
+//            doc.getDocumentElement().normalize();
+
+            FileReader fr = rw(READ, USERS_FILE, null, null);
+            Document doc = fr.doc;
 
             // Find the user element with the given ID
             Element userElement = findUserById(doc, userId);
@@ -278,11 +301,12 @@ public class UserDatabase {
                 }
 
                 // Write the updated XML file
-                TransformerFactory transformerFactory = TransformerFactory.newInstance();
-                Transformer transformer = transformerFactory.newTransformer();
-                DOMSource source = new DOMSource(doc);
-                StreamResult result = new StreamResult(new File(USERS_FILE));
-                transformer.transform(source, result);
+//                TransformerFactory transformerFactory = TransformerFactory.newInstance();
+//                Transformer transformer = transformerFactory.newTransformer();
+//                DOMSource source = new DOMSource(doc);
+//                StreamResult result = new StreamResult(new File(USERS_FILE));
+//                transformer.transform(source, result);
+                rw(WRITE, null, doc, fr.xmlFile);
 
                 System.out.println("Topic removed from user successfully.");
             } else {
@@ -301,11 +325,14 @@ public class UserDatabase {
         }
 
         try {
-            File xmlFile = new File(USERS_FILE);
-            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-            Document doc = dBuilder.parse(xmlFile);
-            doc.getDocumentElement().normalize();
+//            File xmlFile = new File(USERS_FILE);
+//            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+//            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+//            Document doc = dBuilder.parse(xmlFile);
+//            doc.getDocumentElement().normalize();
+
+            FileReader fr = rw(READ, USERS_FILE, null, null);
+            Document doc = fr.doc;
 
             NodeList userList = doc.getElementsByTagName("user");
 

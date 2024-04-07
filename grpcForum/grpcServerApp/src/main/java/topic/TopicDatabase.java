@@ -15,30 +15,33 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.File;
 
+import utils.FileReader;
+
+import static utils.Utils.*;
+
 public class TopicDatabase {
 
-    private static final boolean READ = false;
-    private static final boolean WRITE = true;
+
     private final static String TOPICS_FILE = "src/main/xml/topics.xml";
 
-    private static synchronized FileReader rw(boolean action, String path, Document doc, File xmlFile) throws TransformerException {
-        // 0 - read, 1 - write
-        if(action == WRITE) {
-            editFile(doc, xmlFile);
-            return null;
-        }
-        return readFile(path);
-    }
-    private static synchronized FileReader readFile(String file) {
-        return new FileReader(file);
-    }
-    private static synchronized void editFile(Document doc, File xmlFile) throws TransformerException {
-        TransformerFactory transformerFactory = TransformerFactory.newInstance();
-        Transformer transformer = transformerFactory.newTransformer();
-        DOMSource source = new DOMSource(doc);
-        StreamResult result = new StreamResult(xmlFile);
-        transformer.transform(source, result);
-    }
+//    private static synchronized FileReader rw(boolean action, String path, Document doc, File xmlFile) throws TransformerException {
+//        // 0 - read, 1 - write
+//        if(action == WRITE) {
+//            editFile(doc, xmlFile);
+//            return null;
+//        }
+//        return readFile(path);
+//    }
+//    private static synchronized FileReader readFile(String file) {
+//        return new FileReader(file);
+//    }
+//    private static synchronized void editFile(Document doc, File xmlFile) throws TransformerException {
+//        TransformerFactory transformerFactory = TransformerFactory.newInstance();
+//        Transformer transformer = transformerFactory.newTransformer();
+//        DOMSource source = new DOMSource(doc);
+//        StreamResult result = new StreamResult(xmlFile);
+//        transformer.transform(source, result);
+//    }
 
     public static int getIdByTopicname(String name) {
         try {
@@ -352,20 +355,3 @@ public class TopicDatabase {
     }
 }
 
-class FileReader {
-
-    public Document doc;
-    public File xmlFile;
-
-    public FileReader(String file) {
-        try {
-            xmlFile = new File(file);
-            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-            doc = dBuilder.parse(xmlFile);
-            doc.getDocumentElement().normalize();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-}
