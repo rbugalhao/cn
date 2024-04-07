@@ -92,8 +92,8 @@ public class Service extends ForumGrpc.ForumImplBase {
     @Override
     public void publishMessage(ForumMessage request, StreamObserver<Valid> responseObserver) {
         System.out.println("Received request to publish message: " + request.getTxtMsg());
-        Utils.addMessage(request.getTopicName(), request.getFromUser(), request.getTxtMsg());
-        responseObserver.onNext(Valid.newBuilder().build());
+        boolean val = Utils.addMessage(request.getTopicName(), request.getFromUser(), request.getTxtMsg());
+        responseObserver.onNext(Valid.newBuilder().setValid(val).build());
         responseObserver.onCompleted();
     }
 

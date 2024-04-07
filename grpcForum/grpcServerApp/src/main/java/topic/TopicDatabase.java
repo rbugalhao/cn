@@ -24,24 +24,6 @@ public class TopicDatabase {
 
     private final static String TOPICS_FILE = "src/main/xml/topics.xml";
 
-//    private static synchronized FileReader rw(boolean action, String path, Document doc, File xmlFile) throws TransformerException {
-//        // 0 - read, 1 - write
-//        if(action == WRITE) {
-//            editFile(doc, xmlFile);
-//            return null;
-//        }
-//        return readFile(path);
-//    }
-//    private static synchronized FileReader readFile(String file) {
-//        return new FileReader(file);
-//    }
-//    private static synchronized void editFile(Document doc, File xmlFile) throws TransformerException {
-//        TransformerFactory transformerFactory = TransformerFactory.newInstance();
-//        Transformer transformer = transformerFactory.newTransformer();
-//        DOMSource source = new DOMSource(doc);
-//        StreamResult result = new StreamResult(xmlFile);
-//        transformer.transform(source, result);
-//    }
 
     public static int getIdByTopicname(String name) {
         try {

@@ -58,9 +58,9 @@ public class Client {
     private static User loginCall() {
         Scanner scan = new Scanner(System.in);
         System.out.println("Enter your username:");
-        String username = scan.nextLine();
+        String username = scan.nextLine().trim();
         System.out.println("Enter your password:");
-        String password = scan.nextLine();
+        String password = scan.nextLine().trim();
         User user = User.newBuilder()
                 .setUsrName(username)
                 .setPassword(password)
@@ -74,9 +74,9 @@ public class Client {
     private static void registerCall() {
         Scanner scan = new Scanner(System.in);
         System.out.println("Enter your username:");
-        String username = scan.nextLine();
+        String username = scan.nextLine().trim();
         System.out.println("Enter your password:");
-        String password = scan.nextLine();
+        String password = scan.nextLine().trim();
         User user = User.newBuilder()
                 .setUsrName(username)
                 .setPassword(password)
@@ -90,7 +90,7 @@ public class Client {
         // Asynchronous non-blocking call
         Scanner scan = new Scanner(System.in);
         System.out.println("Enter the topic you want to subscribe to:");
-        String topic = scan.nextLine();
+        String topic = scan.nextLine().trim();
         SubscribeUnSubscribe request = SubscribeUnSubscribe.newBuilder()
                 .setUsrName(user.getUsrName())
                 .setTopicName(topic)
@@ -118,7 +118,7 @@ public class Client {
         // Asynchronous non-blocking call
         Scanner scan = new Scanner(System.in);
         System.out.println("Enter the topic you want to unsubscribe from:");
-        String topic = scan.nextLine();
+        String topic = scan.nextLine().trim();
         SubscribeUnSubscribe request = SubscribeUnSubscribe.newBuilder()
                 .setUsrName(user.getUsrName())
                 .setTopicName(topic)
@@ -219,9 +219,9 @@ public class Client {
         // Asynchronous non-blocking call
         Scanner scan = new Scanner(System.in);
         System.out.println("Enter the topic you want to publish to:");
-        String topic = scan.nextLine();
+        String topic = scan.nextLine().trim();
         System.out.println("Enter the message you want to publish:");
-        String message = scan.nextLine();
+        String message = scan.nextLine().trim();
         ForumMessage request = ForumMessage.newBuilder()
                 .setFromUser(user.getUsrName())
                 .setTopicName(topic)

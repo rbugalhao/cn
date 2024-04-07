@@ -17,6 +17,7 @@ import java.io.File;
 public class Utils {
 
     public static final boolean READ = false;
+
     public static final boolean WRITE = true;
 
     public static void subscribeTopic(String usrName, String topicName) {
@@ -70,19 +71,26 @@ public class Utils {
     }
 
 
-    public static void addMessage(String topicName, String fromUser, String txtMsg) {
+    public static boolean addMessage(String topicName, String fromUser, String txtMsg) {
         int topicId = TopicDatabase.getIdByTopicname(topicName);
         int userId = UserDatabase.getIdByUsername(fromUser);
         if(topicId == -1) {
             System.out.println("Topic not found");
-            return;
+            return false;
         }
         if(userId == -1) {
             System.out.println("User not found");
-            return;
+            return false;
+        }
+
+        // check if user is subscribed to topic
+        if(!UserDatabase.checkTopicIsSubscribed(userId, topicId)) {
+            System.out.println("User not subscribed to topic: " + topicName);
+            return false;
         }
 
         TopicDatabase.createMessage(topicId, userId, fromUser, txtMsg);
+        return true;
     }
 
     public static synchronized FileReader rw(boolean action, String path, Document doc, File xmlFile) throws TransformerException {
