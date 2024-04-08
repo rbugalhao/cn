@@ -22,7 +22,7 @@ import static utils.Utils.*;
 public class TopicDatabase {
 
 
-    private final static String TOPICS_FILE = "src/main/xml/topics.xml";
+    private final static String TOPICS_FILE = "xmlDB/topics.xml";
 
 
     public static int getIdByTopicname(String name) {

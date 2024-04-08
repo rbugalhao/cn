@@ -28,7 +28,7 @@ public class Client {
             channel = ManagedChannelBuilder.forAddress(svcIP, svcPort)
                     // Channels are secure by default (via SSL/TLS).
                     // For the example we disable TLS to avoid
-                    // needing certificates.
+                    // needing certificates .
                     .usePlaintext()
                     .build();
             blockingStub = ForumGrpc.newBlockingStub(channel);

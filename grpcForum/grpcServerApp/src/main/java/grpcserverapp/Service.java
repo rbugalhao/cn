@@ -12,15 +12,36 @@ import user.UserDatabase;
 import utils.Utils;
 
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Random;
 
 public class Service extends ForumGrpc.ForumImplBase {
 
     public Service(int svcPort) {
-
         System.out.println("Service is available on port:" + svcPort);
+        createXMLFiles();
     }
 
+    // create a folder xmlDB with a users.xml and topics.xml file, if they don't exist
+    private void createXMLFiles() {
+        File folder = new File("xmlDB");
+        if (!folder.exists()) {
+            folder.mkdir();
+        }
+
+        File users = new File("xmlDB/users.xml");
+        if (!users.exists()) {
+            Utils.createXMLFile("xmlDB/users.xml","<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?><users current_id=\"0\"></users>");
+
+        }
+
+        File topics = new File("xmlDB/topics.xml");
+        if (!topics.exists()) {
+            Utils.createXMLFile("xmlDB/topics.xml", "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?><topics current_id=\"0\"></topics>");
+
+        }
+    }
     @Override
     public void loginUser(User request, StreamObserver<Valid> responseObserver) {
         System.out.println("Received request to login user: " + request.getUsrName());

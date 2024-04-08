@@ -13,6 +13,8 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 
 public class Utils {
 
@@ -112,6 +114,24 @@ public class Utils {
         transformer.transform(source, result);
     }
 
+    public static void createXMLFile(String filePath, String content) {
+        FileWriter writer = null;
+        try {
+            writer = new FileWriter(filePath);
+            writer.write(content);
+            System.out.println("XML file created successfully at path: " + filePath);
+        } catch (IOException e) {
+            System.err.println("Error occurred while creating the XML file: " + e.getMessage());
+        } finally {
+            if (writer != null) {
+                try {
+                    writer.close();
+                } catch (IOException e) {
+                    System.err.println("Error occurred while closing the file writer: " + e.getMessage());
+                }
+            }
+        }
+    }
 
 }
 

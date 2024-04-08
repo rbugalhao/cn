@@ -18,10 +18,9 @@ import java.io.File;
 import java.util.ArrayList;
 
 import static utils.Utils.*;
-
 public class UserDatabase {
 
-    private final static String USERS_FILE = "src/main/xml/users.xml";
+    private final static String USERS_FILE = "xmlDB/users.xml";
 
     public static User getUserById(int userId) {
         try {
