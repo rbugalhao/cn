@@ -36,9 +36,15 @@ public class Client {
             // Call service operations for example ping server
             Scanner scan = new Scanner(System.in);
 
-            userName = read("Enter your user name:", scan);
+            boolean start = false;
+            while (!start) {
+                userName = read("Enter your user name:", scan);
+                if (userName.length() > 0) {
+                    start = true;
+                }
+            }
 
-            boolean end = false;
+
             while (true) {
                 try {
 
