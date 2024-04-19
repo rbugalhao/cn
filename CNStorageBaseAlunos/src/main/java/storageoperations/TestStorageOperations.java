@@ -21,11 +21,12 @@ public class TestStorageOperations {
             System.out.println(" 3: Download Blob from Bucket");
             System.out.println(" 4: Delete a Bucket");
             System.out.println(" 5: Delete a Blob from a Bucket");
+            System.out.println(" 6: Change permissions of a Blob in a Bucket");
             System.out.println("..........");
             System.out.println("99: Exit");
             System.out.print("Enter an Option: ");
             option = scan.nextInt();
-        } while (!((option >= 0 && option <= 5) || option == 99));
+        } while (!((option >= 0 && option <= 6) || option == 99));
         return option;
     }
 
@@ -69,6 +70,9 @@ public class TestStorageOperations {
                     //
                     case 5:
                         soper.deleteBlobFromBucket();
+                        break;
+                    case 6:
+                        soper.changeBlobPermission();
                         break;
                     case 99:
                         System.exit(0);

@@ -1,10 +1,13 @@
 package grpcclientapp;
 
+import com.google.cloud.storage.Storage;
+import com.google.cloud.storage.StorageOptions;
 import com.google.protobuf.Empty;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
 import servicestubs.*;
+import storage.StorageOperations;
 
 import java.util.Scanner;
 
@@ -43,6 +46,7 @@ public class Client {
                     start = true;
                 }
             }
+
 
 
             while (true) {
@@ -144,6 +148,9 @@ public class Client {
                 .setTopicName(topic)
                 .setTxtMsg(message)
                 .build();
+
+        uploadMessage(request);
+
         StreamObserver<Empty> responseObserver = new StreamObserver<Empty>() {
             @Override
             public void onNext(Empty empty) {
@@ -161,6 +168,34 @@ public class Client {
             }
         };
         noBlockStub.publishMessage(request, responseObserver);
+    }
+
+    private static void uploadMessage(ForumMessage forumMessage) {
+
+        String[] parts = forumMessage.getTxtMsg().split("\\[;");
+        if (parts.length == 2) {
+            String[] parts2 = parts[1].split(";");
+            if (parts2.length == 2) {
+                StorageOptions storageOptions = StorageOptions.getDefaultInstance();
+                Storage storage = storageOptions.getService();
+                String projID = storageOptions.getProjectId();
+                if (projID != null) System.out.println("Current Project ID:" + projID);
+                else {
+                    System.out.println("The environment variable GOOGLE_APPLICATION_CREDENTIALS isn't well defined!!");
+                    System.exit(-1);
+                }
+                StorageOperations soper = new StorageOperations(storage);
+                String bucketName = parts2[0];
+                String blobName = parts2[1].substring(0, parts2[1].length() - 1);
+                System.out.println("Bucket Name: " + bucketName + " Blob Name: " + blobName);
+                // call the storage operation to download the blob
+                try {
+                    soper.uploadBlobToBucket(bucketName, blobName);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
     }
 
 //    static void findPrimesAsynchronousCall() throws InterruptedException {

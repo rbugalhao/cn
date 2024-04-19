@@ -232,4 +232,34 @@ public class StorageOperations {
         batch.submit();
     }
 
+    public void changeBlobPermission() {
+        Scanner scan = new Scanner(System.in);
+        System.out.println("The name of Bucket? ");
+        String bucketName = scan.nextLine();
+        System.out.println("The name of Blob? ");
+        String blobName = scan.nextLine();
+        BlobId blobId = BlobId.of(bucketName, blobName);
+        Blob blob = storage.get(blobId);
+        if (blob == null) {
+            System.out.println("No such Blob exists !");
+            return;
+        }
+        Acl.Entity aclEnt = Acl.User.ofAllUsers();
+        Acl.Role[] roles = Acl.Role.values();
+
+        System.out.println("Choose a permission:");
+        for (int i = 0; i < roles.length; i++) {
+            System.out.println(i + ": " + roles[i]);
+        }
+        int option = scan.nextInt();
+        if (option < 0 || option >= roles.length) {
+            System.out.println("Invalid option");
+            return;
+        }
+        Acl.Role role = roles[option];
+        Acl acl = Acl.newBuilder(aclEnt, role).build();
+        blob.createAcl(acl);
+        System.out.println("Blob " + blobName + " permissions changed");
+    }
+
 }
