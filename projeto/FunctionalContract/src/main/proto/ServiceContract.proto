@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "servicestubs";
+
+package grpcservice;
+
+import "google/protobuf/empty.proto";
+
+//package do proto
+
+// Service contract operations 
+service FunctionalService {
+    // ping server for testing service availability
+    rpc isAlive(google.protobuf.Empty) returns (TextMessage);
+
+    rpc uploadImage(stream ImageBlock) returns (TextMessage);
+
+    rpc getImageDetailsById(TextMessage) returns (ImageDetails);
+
+    rpc getFilenamesByLabelAndDate(Condition) returns (stream TextMessage);
+
+    rpc downloadImageByFilename(TextMessage) returns (stream ImageBlock);
+}
+
+message Condition {
+    string label = 1;
+    Date date1 = 2;
+    Date date2 = 3;
+}
+
+message TextMessage {
+    string txt =1;
+}
+
+message ImageBlock {
+    string filename = 1;
+    Block block = 2;
+}
+
+message Block{
+    bytes image = 1;
+}
+
+message ImageDetails {
+    repeated ImageLabel labels = 1;
+    Date date = 2;
+}
+
+message ImageLabel {
+    string name1 = 1;
+    string name2 = 2;
+}
+
+message Date {
+    int32 day = 1;
+    int32 month = 2;
+    int32 year = 3;
+}
