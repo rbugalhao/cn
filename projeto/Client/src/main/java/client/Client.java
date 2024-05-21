@@ -143,12 +143,12 @@ public class Client {
             }
         };
 
-        Date date1 = Date.newBuilder()
+        PublishDate date1 = PublishDate.newBuilder()
                 .setDay(day_start)
                 .setMonth(month_start)
                 .setYear(year_start)
                 .build();
-        Date date2 = Date.newBuilder()
+        PublishDate date2 = PublishDate.newBuilder()
                 .setDay(day_end)
                 .setMonth(month_end)
                 .setYear(year_end)
@@ -228,7 +228,7 @@ public class Client {
 
         // Asynchronous non-blocking call
         StreamObserver<ImageDetails> responseObserver = new StreamObserver<ImageDetails>() {
-            Date date = Date.newBuilder().build();
+            PublishDate date = PublishDate.newBuilder().build();
             ArrayList<ImageLabel> labels = new ArrayList<>();
             @Override
             public void onNext(ImageDetails imageDetails) {

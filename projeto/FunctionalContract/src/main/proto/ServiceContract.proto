@@ -25,8 +25,8 @@ service FunctionalService {
 
 message Condition {
     string label = 1;
-    Date date1 = 2;
-    Date date2 = 3;
+    PublishDate date1 = 2;
+    PublishDate date2 = 3;
 }
 
 message TextMessage {
@@ -44,7 +44,7 @@ message Block{
 
 message ImageDetails {
     repeated ImageLabel labels = 1;
-    Date date = 2;
+    PublishDate date = 2;
 }
 
 message ImageLabel {
@@ -52,7 +52,7 @@ message ImageLabel {
     string name2 = 2;
 }
 
-message Date {
+message PublishDate {
     int32 day = 1;
     int32 month = 2;
     int32 year = 3;

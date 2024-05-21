@@ -1,5 +1,8 @@
 package labelsApp;
 
+import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.FirestoreOptions;
 import com.google.cloud.pubsub.v1.Subscriber;
 import com.google.cloud.translate.Translate;
 import com.google.cloud.translate.TranslateOptions;
@@ -23,7 +26,11 @@ public class AppMain {
     private final static String TOPIC_NAME = "IMAGES";
     private final static String SUBSCRIPTION_NAME = "subImages";
 
-    public static void main(String[] args) {
+    private final static String dbName = "projeto";
+    public final static String collectionName = "image-labels";
+    public static Firestore db;
+
+    public static void main(String[] args) throws IOException {
         // Assume:
         // - Vision API enabled no projeto GCP
         // - A variável de ambiente GOOGLE_APPLICATION_CREDENTIALS com uma chave de uma
@@ -34,15 +41,12 @@ public class AppMain {
         PubSubClient.createSubscription(TOPIC_NAME, SUBSCRIPTION_NAME);
         Subscriber subscriber = PubSubClient.subscribeMessages(PROJECT_ID, SUBSCRIPTION_NAME);
 
-//        boolean end = false;
-
-//        while (!end) {
-//            try {
-//                Thread.sleep(500);
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
-//        }
+        // innit firestore db
+        GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
+        FirestoreOptions options = FirestoreOptions
+                .newBuilder().setDatabaseId(dbName).setCredentials(credentials)
+                .build();
+        db = options.getService();
 
         Scanner scan = new Scanner(System.in);
         System.out.println("Write 'end' to exit");

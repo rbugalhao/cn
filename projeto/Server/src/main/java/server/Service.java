@@ -1,5 +1,8 @@
 package server;
 
+import com.google.api.core.ApiFuture;
+import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.firestore.*;
 import com.google.cloud.pubsub.v1.Subscriber;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
@@ -8,7 +11,8 @@ import io.grpc.Status;
 import io.grpc.StatusException;
 import io.grpc.stub.StreamObserver;
 import servicestubs.*;
-import servicestubs.Date;
+
+
 
 
 import javax.imageio.ImageIO;
@@ -20,12 +24,16 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 public class Service extends FunctionalServiceGrpc.FunctionalServiceImplBase {
 
     private StorageOperations soper;
-    private Subscriber subscriber = null;
+    public static Subscriber subscriber = null;
     private final String PROJECT_ID = "cn2324-t2-g11";
     private final String STORAGE_BUCKET = "cn2324_projeto_g11_europa";
     private final String BLOB_PREFIX = "_id_";
@@ -33,7 +41,11 @@ public class Service extends FunctionalServiceGrpc.FunctionalServiceImplBase {
     private final String TOPIC_NAME = "IMAGES";
     private final String SUBSCRIPTION_NAME = "subImages";
 
-    public Service(int svcPort) {
+    private final static String dbName = "projeto";
+    public final static String collectionName = "image-labels";
+    public static Firestore db;
+
+    public Service(int svcPort) throws IOException {
 
         System.out.println("Service is available on port:" + svcPort);
 
@@ -51,6 +63,13 @@ public class Service extends FunctionalServiceGrpc.FunctionalServiceImplBase {
         PubSubClient.createNewTopic(TOPIC_NAME);
         PubSubClient.createSubscription(TOPIC_NAME, SUBSCRIPTION_NAME);
         subscriber = PubSubClient.subscribeMessages(PROJECT_ID, SUBSCRIPTION_NAME);
+        ////////////
+        GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
+        FirestoreOptions options = FirestoreOptions
+                .newBuilder().setDatabaseId(dbName).setCredentials(credentials)
+                .build();
+        db = options.getService();
+
     }
 
 
@@ -86,13 +105,13 @@ public class Service extends FunctionalServiceGrpc.FunctionalServiceImplBase {
                     System.out.println("Image received: " + filePath);
                     System.out.println("Number of blocks: " + blockNumber);
                     BufferedImage image = ImageIO.read(new ByteArrayInputStream(imageStream.toByteArray()));
-                    String id = filePath;
+                    String id = BLOB_PREFIX + filePath;
                     responseObserver.onNext(TextMessage.newBuilder().setTxt(id).build());
                     responseObserver.onCompleted();
 //                    displayImage(image);
                     // store in cloud storage
                     soper.uploadBlobToBucketImage(STORAGE_BUCKET, BLOB_PREFIX + filePath, image);
-
+                    // send mensage to create labels
                     Map<String, String> atribs = new HashMap<String, String>();
                     atribs.put("bucket", STORAGE_BUCKET);
                     atribs.put("blob", BLOB_PREFIX + filePath);
@@ -127,11 +146,34 @@ public class Service extends FunctionalServiceGrpc.FunctionalServiceImplBase {
 
     private ImageDetails getImageDetails(String imageId) {
 
+        DocumentSnapshot doc = null;
+        try {
+            doc = FirestoreClient.getContentById(db, collectionName, imageId);
+        } catch (ExecutionException | InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
+        java.util.Date dateObj = doc.getDate("date");
+        String date = formatter.format(dateObj);
+
+        List<String> labels = (List<String>) doc.get("labels");
+        List<String> translatedLabels = (List<String>) doc.get("translatedLabels");
+
+        System.out.println("date: " + date);
+
+        int day = Integer.parseInt(date.substring(0, date.indexOf("/")));
+        int month = Integer.parseInt(date.substring(date.indexOf("/") + 1, date.lastIndexOf("/")));
+        int year = Integer.parseInt(date.substring(date.lastIndexOf("/") + 1));
+
+        System.out.println("Document data: " + doc.getData());
 
         ImageDetails.Builder imageDetails = ImageDetails.newBuilder();
-        imageDetails.setDate(Date.newBuilder().setDay(1).setMonth(1).setYear(2021).build());
-        imageDetails.addLabels(ImageLabel.newBuilder().setName1("label1").setName2("label1_t").build());
-        imageDetails.addLabels(ImageLabel.newBuilder().setName1("label2").setName2("label2_t").build());
+        imageDetails.setDate(PublishDate.newBuilder().setDay(day).setMonth(month).setYear(year).build());
+
+        for (int i = 0; i < labels.size(); i++) {
+            imageDetails.addLabels(ImageLabel.newBuilder().setName1(labels.get(i)).setName2(translatedLabels.get(i)).build());
+        }
+
         return imageDetails.build();
     }
 
@@ -165,7 +207,7 @@ public class Service extends FunctionalServiceGrpc.FunctionalServiceImplBase {
     private byte[] getImageBytes(String filename) {
         try {
 //            BufferedImage image = ImageIO.read(new ByteArrayInputStream(Files.readAllBytes(Paths.get(filename))));
-            BufferedImage image = soper.downloadBlobFromBucket(STORAGE_BUCKET, BLOB_PREFIX + filename);
+            BufferedImage image = soper.downloadBlobFromBucket(STORAGE_BUCKET, filename);
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             String type = filename.substring(filename.lastIndexOf(".") + 1);
             ImageIO.write(image, type, baos);
@@ -183,19 +225,67 @@ public class Service extends FunctionalServiceGrpc.FunctionalServiceImplBase {
     public void getFilenamesByLabelAndDate(Condition request, StreamObserver<TextMessage> responseObserver) {
         System.out.println("getFilenamesByLabelAndDate called!");
         String label = request.getLabel();
-        Date date1 = request.getDate1();
-        Date date2 = request.getDate2();
-        ArrayList<String> filenames = getFilenames(label, date1, date2);
+        PublishDate date1 = request.getDate1();
+        PublishDate date2 = request.getDate2();
+        ArrayList<String> filenames = null;
+        try {
+            filenames = getFilenames(label, date1, date2);
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
         for (String filename : filenames) {
             responseObserver.onNext(TextMessage.newBuilder().setTxt(filename).build());
         }
         responseObserver.onCompleted();
     }
 
-    private ArrayList<String> getFilenames(String label, Date date1, Date date2) {
+    private ArrayList<String> getFilenames(String label, PublishDate date1, PublishDate date2) throws ParseException {
+
         ArrayList<String> filenames = new ArrayList<>();
-        filenames.add("image1.jpg");
-        filenames.add("image2.jpg");
+
+        SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
+        Date date_i = formatter.parse(date1.getDay()+"/"+date1.getMonth()+"/"+date1.getYear());
+        Date date_f = formatter.parse(date2.getDay()+"/"+date2.getMonth()+"/"+date2.getYear());
+
+        // verificar labels
+        Query query1 = db.collection(collectionName)
+                .whereArrayContains("labels", label)
+                .whereGreaterThanOrEqualTo("date", date_i)
+                .whereLessThanOrEqualTo("date", date_f);
+
+        ApiFuture<QuerySnapshot> querySnapshot1 = query1.get();
+        QuerySnapshot queryResult1 = null;
+        try {
+            queryResult1 = querySnapshot1.get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
+
+        for (QueryDocumentSnapshot document : queryResult1) {
+            filenames.add(document.getId());
+        }
+
+        //verificar translatedLabels
+        Query query2 = db.collection(collectionName)
+                .whereArrayContains("translatedLabels", label)
+                .whereGreaterThanOrEqualTo("date", date_i)
+                .whereLessThanOrEqualTo("date", date_f);
+
+        ApiFuture<QuerySnapshot> querySnapshot2 = query2.get();
+        QuerySnapshot queryResult2 = null;
+        try {
+            queryResult2 = querySnapshot2.get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
+
+        for (QueryDocumentSnapshot document : queryResult2) {
+            if (!filenames.contains(document.getId()))
+                filenames.add(document.getId());
+        }
+
+//        filenames.add("image1.jpg");
+//        filenames.add("image2.jpg");
         return filenames;
     }
 

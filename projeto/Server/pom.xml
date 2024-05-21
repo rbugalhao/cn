@@ -37,6 +37,11 @@
             <artifactId>FunctionalContract</artifactId>
             <version>1.0</version>
         </dependency>
+        <dependency>
+            <groupId>com.google.cloud</groupId>
+            <artifactId>google-cloud-firestore</artifactId>
+            <version>3.20.1</version>
+        </dependency>
     </dependencies>
 
     <build>

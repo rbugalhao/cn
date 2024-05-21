@@ -24,6 +24,8 @@ public class GrpcServer {
             Runtime.getRuntime().addShutdownHook(new ShutdownHook(svc));
             // Waits for the server to become terminated
             svc.awaitTermination();
+            server.Service.subscriber.stopAsync();
+
         } catch (Exception ex) {
             ex.printStackTrace();
         }

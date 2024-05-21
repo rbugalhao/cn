@@ -15,6 +15,8 @@ public class ShutdownHook extends Thread {
             // but new calls are rejected. So we can clean and finish work
             svc.shutdown();
             svc.awaitTermination();
+
+
         } catch (InterruptedException e) {
             e.printStackTrace(System.err);
         }

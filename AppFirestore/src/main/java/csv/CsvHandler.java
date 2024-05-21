@@ -38,7 +38,7 @@ public class CsvHandler {
         ocup.event.licenciamento.dtLicenc = formatter.parse(cols[13]);
         return ocup;
     }
-    public static void insertDocuments(String pathnameCSV, Firestore db, String collectionName)
+        public static void insertDocuments(String pathnameCSV, Firestore db, String collectionName)
             throws Exception {
         BufferedReader reader = new BufferedReader(new FileReader(pathnameCSV));
         CollectionReference colRef = db.collection(collectionName);

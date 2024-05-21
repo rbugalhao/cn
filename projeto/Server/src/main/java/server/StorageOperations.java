@@ -166,12 +166,13 @@ public class StorageOperations {
     public void uploadBlobToBucketImage(String bucketName, String blobName, BufferedImage bufferedImage) throws IOException {
         // Convert BufferedImage to byte array
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ImageIO.write(bufferedImage, "png", baos);
+        String formatName = blobName.substring(blobName.lastIndexOf('.') + 1);
+        ImageIO.write(bufferedImage, formatName, baos);
         byte[] imageBytes = baos.toByteArray();
 
         // Create BlobId and BlobInfo
         BlobId blobId = BlobId.of(bucketName, blobName);
-        BlobInfo blobInfo = BlobInfo.newBuilder(blobId).setContentType("image/png").build();
+        BlobInfo blobInfo = BlobInfo.newBuilder(blobId).setContentType("image/"+formatName).build();
 
         if (imageBytes.length > 1_000_000) {
             // Write image in chunks if the size is larger than 1MB
