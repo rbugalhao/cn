@@ -10,8 +10,10 @@ public class MessageReceiveHandler implements MessageReceiver {
 
     @Override
     public void receiveMessage(PubsubMessage pubsubMessage, AckReplyConsumer ackReplyConsumer) {
+        System.out.println("-----------------------------------------------------");
         System.out.println("Message (Id:" + pubsubMessage.getMessageId()+" Data:"+pubsubMessage.getData().toStringUtf8()+")");
         //System.out.println("Message Data: " + pubsubMessage.getData().toStringUtf8());
+
         Map<String, String> atribs=pubsubMessage.getAttributesMap();
         for (String key : atribs.keySet())
             System.out.println("Msg Attribute:("+key+", "+atribs.get(key)+")");

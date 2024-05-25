@@ -18,8 +18,8 @@ import java.util.concurrent.ExecutionException;
 
 public class Main {
 
-    public static String dbName = "cn-2324";
-    public static String collectionName = "ocupacao-temporaria";
+    public static String dbName = "projeto";
+    public static String collectionName = "image-labels";
     public static String pathCsv = "C:\\cnLab\\cn\\OcupacaoEspacosPublicos.csv";
 
     public static Firestore db;

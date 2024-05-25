@@ -163,6 +163,22 @@ public class StorageOperations {
         System.out.println("Blob " + blobName + " created in bucket " + bucketName);
     }
 
+    public void uploadBlobToBucket(String bucketName, String blobName, byte[] bytes) throws IOException {
+        BlobId blobId = BlobId.of(bucketName, blobName);
+        BlobInfo blobInfo = BlobInfo.newBuilder(blobId).setContentType("image/jpeg").build();
+
+        // When content is not available or large (1MB or more) it is recommended
+        // to write it in chunks via the blob's channel writer.
+        try (WriteChannel writer = storage.writer(blobInfo)) {
+            ByteBuffer buffer = ByteBuffer.wrap(bytes, 0, 1_000_000);
+            while (buffer.hasRemaining()) {
+                writer.write(buffer);
+            }
+        }
+
+        System.out.println("Blob " + blobName + " created in bucket " + bucketName);
+    }
+
     public void uploadBlobToBucketImage(String bucketName, String blobName, BufferedImage bufferedImage) throws IOException {
         // Convert BufferedImage to byte array
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -322,4 +338,9 @@ public class StorageOperations {
         System.out.println("Blob " + blobName + " permissions changed");
     }
 
+    public boolean blobExists(String bucketName, String blobName) {
+        BlobId blobId = BlobId.of(bucketName, blobName);
+        Blob blob = storage.get(blobId);
+        return blob != null;
+    }
 }

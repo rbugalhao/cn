@@ -2,8 +2,11 @@ package server;
 
 import com.google.api.core.ApiFuture;
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.WriteChannel;
 import com.google.cloud.firestore.*;
 import com.google.cloud.pubsub.v1.Subscriber;
+import com.google.cloud.storage.BlobId;
+import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 import com.google.protobuf.ByteString;
@@ -22,15 +25,19 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-public class Service extends FunctionalServiceGrpc.FunctionalServiceImplBase {
+public class Service extends FunctionalServiceGrpc.FunctionalServiceImplBase{
 
     private StorageOperations soper;
     public static Subscriber subscriber = null;
@@ -39,7 +46,9 @@ public class Service extends FunctionalServiceGrpc.FunctionalServiceImplBase {
     private final String BLOB_PREFIX = "_id_";
 
     private final String TOPIC_NAME = "IMAGES";
-    private final String SUBSCRIPTION_NAME = "subImages";
+    private final String LABEL_SUBSCRIPTION_NAME = "subImages";
+    private final String LOG_SUBSCRIPTION_NAME = "subLog";
+    private final String SERVER_SUBSCRIPTION_NAME = "subServer";
 
     private final static String dbName = "projeto";
     public final static String collectionName = "image-labels";
@@ -60,9 +69,14 @@ public class Service extends FunctionalServiceGrpc.FunctionalServiceImplBase {
         }
         soper = new StorageOperations(storage);
         ////////////
-        PubSubClient.createNewTopic(TOPIC_NAME);
-        PubSubClient.createSubscription(TOPIC_NAME, SUBSCRIPTION_NAME);
-        subscriber = PubSubClient.subscribeMessages(PROJECT_ID, SUBSCRIPTION_NAME);
+//        PubSubClient.createNewTopic(TOPIC_NAME);
+        PubSubClient.createSubscription(TOPIC_NAME, LABEL_SUBSCRIPTION_NAME);
+        PubSubClient.createSubscription(TOPIC_NAME, LOG_SUBSCRIPTION_NAME);
+        PubSubClient.createSubscription(TOPIC_NAME, SERVER_SUBSCRIPTION_NAME);
+
+//        subscriber = PubSubClient.subscribeMessages(PROJECT_ID, LABEL_SUBSCRIPTION_NAME);
+        subscriber = PubSubClient.subscribeMessages(PROJECT_ID, SERVER_SUBSCRIPTION_NAME);
+//        subscriber = PubSubClient.subscribeMessages(PROJECT_ID, LOG_SUBSCRIPTION_NAME);
         ////////////
         GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
         FirestoreOptions options = FirestoreOptions
@@ -74,55 +88,138 @@ public class Service extends FunctionalServiceGrpc.FunctionalServiceImplBase {
 
 
     // recieves a stream of blocks (bytes) of an image, and shows it
+//    @Override
+//    public StreamObserver<ImageBlock> uploadImage(StreamObserver<TextMessage> responseObserver) {
+//        return new StreamObserver<ImageBlock>() {
+//            String filename;
+//            ByteArrayOutputStream imageStream = new ByteArrayOutputStream();
+//            int blockNumber = 0;
+//
+//            @Override
+//            public void onNext(ImageBlock imageBlock) {
+//
+//                filename = imageBlock.getFilename();
+//                ByteString imageBytes = imageBlock.getBlock().getImage();
+//
+//                try {
+//                    imageStream.write(imageBytes.toByteArray());
+//                    blockNumber++;
+//                } catch (IOException e) {
+//                    responseObserver.onError(e);
+//                }
+//            }
+//
+//            @Override
+//            public void onError(Throwable t) {
+//                System.err.println("Error receiving image: " + t.getMessage());
+//            }
+//
+//            @Override
+//            public void onCompleted() {
+//                try {
+//                    String filePath = filename;
+//                    System.out.println("Image received: " + filePath);
+//                    System.out.println("Number of blocks: " + blockNumber);
+//                    BufferedImage image = ImageIO.read(new ByteArrayInputStream(imageStream.toByteArray()));
+//                    String id = BLOB_PREFIX + filePath;
+//                    responseObserver.onNext(TextMessage.newBuilder().setTxt(id).build());
+//                    responseObserver.onCompleted();
+////                    displayImage(image);
+//                    // store in cloud storage
+//                    soper.uploadBlobToBucketImage(STORAGE_BUCKET, BLOB_PREFIX + filePath, image);
+//                    // send mensage to create labels
+//                    Map<String, String> atribs = new HashMap<String, String>();
+//                    atribs.put("bucket", STORAGE_BUCKET);
+//                    atribs.put("blob", BLOB_PREFIX + filePath);
+//                    PubSubClient.publishMessage(TOPIC_NAME, MessageType.PUBLISH.toString(), atribs);
+//                } catch (Exception e) {
+//                    responseObserver.onError(e);
+//                }
+//            }
+//        };
+//    }
+
+    public boolean blobExists(String bucketName, String blobName) {
+        return soper.blobExists(bucketName, blobName);
+    }
+
     @Override
     public StreamObserver<ImageBlock> uploadImage(StreamObserver<TextMessage> responseObserver) {
         return new StreamObserver<ImageBlock>() {
-            String filename;
-            ByteArrayOutputStream imageStream = new ByteArrayOutputStream();
-            int blockNumber = 0;
+            private String filename;
+            private WriteChannel writer;
+            private int blockNumber = 0;
+
             @Override
             public void onNext(ImageBlock imageBlock) {
-
-                filename = imageBlock.getFilename();
-                ByteString imageBytes = imageBlock.getBlock().getImage();
                 try {
-                    imageStream.write(imageBytes.toByteArray());
+                    if (blockNumber == 0) {
+                        filename = imageBlock.getFilename();
+                        // check if blob already exists
+                        if (blobExists(STORAGE_BUCKET, filename)) {
+                            responseObserver.onError(new StatusException(Status.ALREADY_EXISTS.withDescription("Image, with that name, already exists")));
+                            return;
+                        }
+
+                        BlobId blobId = BlobId.of(STORAGE_BUCKET, filename);
+                        BlobInfo blobInfo = BlobInfo.newBuilder(blobId).setContentType("image/" + getImageFormat(filename)).build();
+                        writer = soper.storage.writer(blobInfo);
+                    }
+
+                    ByteString imageBytes = imageBlock.getBlock().getImage();
+                    ByteBuffer buffer = ByteBuffer.wrap(imageBytes.toByteArray());
+                    writer.write(buffer);
                     blockNumber++;
                 } catch (IOException e) {
-                    responseObserver.onError(e);
+                    responseObserver.onError(new RuntimeException("Error writing image bytes", e));
                 }
             }
 
             @Override
             public void onError(Throwable t) {
                 System.err.println("Error receiving image: " + t.getMessage());
+                if (writer != null) {
+                    try {
+                        writer.close();
+                    } catch (IOException e) {
+                        System.err.println("Error closing writer: " + e.getMessage());
+                    }
+                }
             }
 
             @Override
             public void onCompleted() {
                 try {
+                    if (writer != null) {
+                        writer.close();
+                    }
                     String filePath = filename;
                     System.out.println("Image received: " + filePath);
                     System.out.println("Number of blocks: " + blockNumber);
-                    BufferedImage image = ImageIO.read(new ByteArrayInputStream(imageStream.toByteArray()));
-                    String id = BLOB_PREFIX + filePath;
+
+                    String id = filePath;
                     responseObserver.onNext(TextMessage.newBuilder().setTxt(id).build());
                     responseObserver.onCompleted();
-//                    displayImage(image);
-                    // store in cloud storage
-                    soper.uploadBlobToBucketImage(STORAGE_BUCKET, BLOB_PREFIX + filePath, image);
-                    // send mensage to create labels
-                    Map<String, String> atribs = new HashMap<String, String>();
-                    atribs.put("bucket", STORAGE_BUCKET);
-                    atribs.put("blob", BLOB_PREFIX + filePath);
-                    PubSubClient.publishMessage(TOPIC_NAME, MessageType.PUBLISH.toString(), atribs);
+
+                    // Send message to create labels
+                    Map<String, String> attribs = new HashMap<>();
+                    attribs.put("bucket", STORAGE_BUCKET);
+                    attribs.put("blob", id);
+                    PubSubClient.publishMessage(TOPIC_NAME, MessageType.PUBLISH.toString(), attribs);
+
+                } catch (IOException e) {
+                    responseObserver.onError(new RuntimeException("Error completing image upload", e));
                 } catch (Exception e) {
-                    responseObserver.onError(e);
+                    throw new RuntimeException(e);
                 }
             }
         };
     }
 
+    private String getImageFormat(String filename) {
+        int dotIndex = filename.lastIndexOf('.');
+        return dotIndex == -1 ? "jpg" : filename.substring(dotIndex + 1);
+    }
 
 
 
@@ -288,6 +385,5 @@ public class Service extends FunctionalServiceGrpc.FunctionalServiceImplBase {
 //        filenames.add("image2.jpg");
         return filenames;
     }
-
 
 }

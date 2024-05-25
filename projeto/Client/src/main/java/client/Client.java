@@ -15,6 +15,10 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -25,8 +29,11 @@ public class Client {
     private static String svcIP = "localhost";
     private static int svcPort = 8000;
     private static ManagedChannel channel;
-    private static FunctionalServiceGrpc.FunctionalServiceBlockingStub blockingStub;
-    private static FunctionalServiceGrpc.FunctionalServiceStub noBlockStub;
+    private static FunctionalServiceGrpc.FunctionalServiceBlockingStub blockingStubFunctional;
+    private static FunctionalServiceGrpc.FunctionalServiceStub noBlockStubFunctional;
+
+    private static ManagementServiceGrpc.ManagementServiceBlockingStub blockingStubManagement;
+    private static ManagementServiceGrpc.ManagementServiceStub noBlockStubManagement;
 
     public static void main(String[] args) {
         try {
@@ -34,6 +41,13 @@ public class Client {
                 svcIP = args[0];
                 svcPort = Integer.parseInt(args[1]);
             }
+
+            System.out.println("Possible IPs of the server:");
+            ips();
+            System.out.println("Enter the IP of the server:");
+            Scanner scan = new Scanner(System.in);
+            svcIP = scan.nextLine();
+
             System.out.println("connect to " + svcIP + ":" + svcPort);
             channel = ManagedChannelBuilder.forAddress(svcIP, svcPort)
                     // Channels are secure by default (via SSL/TLS).
@@ -41,8 +55,11 @@ public class Client {
                     // needing certificates.
                     .usePlaintext()
                     .build();
-            blockingStub = FunctionalServiceGrpc.newBlockingStub(channel);
-            noBlockStub = FunctionalServiceGrpc.newStub(channel);
+            blockingStubFunctional = FunctionalServiceGrpc.newBlockingStub(channel);
+            noBlockStubFunctional = FunctionalServiceGrpc.newStub(channel);
+
+            blockingStubManagement = ManagementServiceGrpc.newBlockingStub(channel);
+            noBlockStubManagement = ManagementServiceGrpc.newStub(channel);
             // Call service operations for example ping server
             boolean end = false;
             while (!end) {
@@ -53,6 +70,17 @@ public class Client {
             System.out.println("Unhandled exception");
             ex.printStackTrace();
         }
+    }
+
+    public static void ips() throws IOException, InterruptedException {
+        String cfURL = "https://europe-west1-cn2324-t2-g11.cloudfunctions.net/cf-list-group-run-vms";
+        HttpClient client = HttpClient.newBuilder().build();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(cfURL))
+                .GET()
+                .build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        if(response.statusCode() == 200) System.out.println(response.body());
     }
 
     private static String read(String msg, Scanner input) {
@@ -94,9 +122,11 @@ public class Client {
                 break;
             case 5:
                 System.out.println("(Management) Change number of server instances");
+                changeNumberOfServerInstances();
                 break;
             case 6:
                 System.out.println("(Management) Change number of image processing instances");
+                changeNumberOfImageProcessingInstances();
                 break;
             case 99:
                 System.out.println("Exit");
@@ -107,6 +137,60 @@ public class Client {
         }
 
 
+    }
+
+    private static void changeNumberOfImageProcessingInstances() {
+        Scanner scan = new Scanner(System.in);
+        System.out.println("Enter number of image processing instances: ");
+        int num = scan.nextInt();
+
+        StreamObserver<TextMessage> responseObserver = new StreamObserver<TextMessage>() {
+            @Override
+            public void onNext(TextMessage textMessage) {
+                System.out.println("Message: " + textMessage.getTxt());
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+                System.out.println("Error: " + throwable.getMessage());
+            }
+
+            @Override
+            public void onCompleted() {
+                System.out.println("All messages received");
+            }
+        };
+
+        NumberOfInstances numberOfInstances = NumberOfInstances.newBuilder().setNumberOfInstances(num).build();
+
+        noBlockStubManagement.changeNumberOfImageProcessingInstances(numberOfInstances, responseObserver);
+    }
+
+    private static void changeNumberOfServerInstances() {
+        Scanner scan = new Scanner(System.in);
+        System.out.println("Enter number of server instances: ");
+        int num = scan.nextInt();
+
+        StreamObserver<TextMessage> responseObserver = new StreamObserver<TextMessage>() {
+            @Override
+            public void onNext(TextMessage textMessage) {
+                System.out.println("Message: " + textMessage.getTxt());
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+                System.out.println("Error: " + throwable.getMessage());
+            }
+
+            @Override
+            public void onCompleted() {
+                System.out.println("All messages received");
+            }
+        };
+
+        NumberOfInstances numberOfInstances = NumberOfInstances.newBuilder().setNumberOfInstances(num).build();
+
+        noBlockStubManagement.changeNumberOfServerInstances(numberOfInstances, responseObserver);
     }
 
     private static void getFilenamesByLabelAndDate() {
@@ -160,7 +244,7 @@ public class Client {
                 .setDate2(date2)
                 .build();
 
-        noBlockStub.getFilenamesByLabelAndDate(condition, responseObserver);
+        noBlockStubFunctional.getFilenamesByLabelAndDate(condition, responseObserver);
     }
 
 
@@ -195,12 +279,12 @@ public class Client {
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
-                displayImage(image);
+//                displayImage(image);
                 storeImage(image, filePath);
             }
         };
 
-        noBlockStub.downloadImageByFilename(TextMessage.newBuilder().setTxt(filename).build(), responseObserver);
+        noBlockStubFunctional.downloadImageByFilename(TextMessage.newBuilder().setTxt(filename).build(), responseObserver);
     }
 
     private static void storeImage(BufferedImage image, String filePath) {
@@ -254,7 +338,7 @@ public class Client {
                 }
             }
         };
-        noBlockStub.getImageDetailsById(TextMessage.newBuilder().setTxt(imageId).build(), responseObserver);
+        noBlockStubFunctional.getImageDetailsById(TextMessage.newBuilder().setTxt(imageId).build(), responseObserver);
 
     }
 
@@ -268,7 +352,7 @@ public class Client {
 
             @Override
             public void onError(Throwable throwable) {
-                System.out.println("Error uploading image");
+                System.out.println("Error: " + throwable.getMessage());
             }
 
             @Override
@@ -278,12 +362,13 @@ public class Client {
             }
         };
 
-        StreamObserver<ImageBlock> requestObserver = noBlockStub.uploadImage(responseObserver);
+        StreamObserver<ImageBlock> requestObserver = noBlockStubFunctional.uploadImage(responseObserver);
 
         Scanner scan = new Scanner(System.in);
         System.out.println("Enter image path: ");
         String imagePath = scan.nextLine();
-        imagePath = imagePath.substring(1, imagePath.length() - 1);
+        if(imagePath.startsWith("\"") && imagePath.endsWith("\""))
+            imagePath = imagePath.substring(1, imagePath.length() - 1);
 //        String type = imagePath.substring(imagePath.lastIndexOf(".") + 1);
         System.out.println("Enter image name: ");
         String imageName = scan.nextLine();

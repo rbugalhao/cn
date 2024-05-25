@@ -19,7 +19,7 @@
         <!-- https://mvnrepository.com/artifact/com.google.cloud/google-cloud-storage -->
         <dependency>
             <groupId>isel.grpc</groupId>
-            <artifactId>ManagemantContract</artifactId>
+            <artifactId>ManagementContract</artifactId>
             <version>1.0</version>
         </dependency>
         <dependency>

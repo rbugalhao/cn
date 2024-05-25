@@ -48,13 +48,13 @@ public class AppMain {
                 .build();
         db = options.getService();
 
-        Scanner scan = new Scanner(System.in);
-        System.out.println("Write 'end' to exit");
-        String input = scan.nextLine();
-        while (!input.equals("end")) {
-            input = scan.nextLine();
-        }
-        subscriber.stopAsync();
+//        Scanner scan = new Scanner(System.in);
+//        System.out.println("Write 'end' to exit");
+//        String input = scan.nextLine();
+//        while (!input.equals("end")) {
+//            input = scan.nextLine();
+//        }
+//        subscriber.stopAsync();
         subscriber.awaitTerminated();
         System.out.println("Exiting...");
 

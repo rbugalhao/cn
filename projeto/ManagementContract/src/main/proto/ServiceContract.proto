@@ -10,11 +10,18 @@ import "google/protobuf/empty.proto";
 // package do proto
 
 // Service contract operations
-service Service {
+service ManagementService {
     // ping server for testing service availability
     rpc isAlive(google.protobuf.Empty) returns (TextMessage);
 
+    rpc changeNumberOfServerInstances(NumberOfInstances) returns (TextMessage);
+
+    rpc changeNumberOfImageProcessingInstances(NumberOfInstances) returns (TextMessage);
 
 }
 
 message TextMessage {string txt =1;}
+
+message NumberOfInstances {
+    int32 numberOfInstances = 1;
+}
