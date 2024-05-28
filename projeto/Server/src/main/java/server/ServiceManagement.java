@@ -39,8 +39,6 @@ public class ServiceManagement extends ManagementServiceGrpc.ManagementServiceIm
     private final String LABELS_INSTANCE_GROUP_ZONE = "europe-southwest1-a";
     private final String LABELS_INSTANCE_GROUP_NAME = "instance-group-labels-1";
 
-    private final String TOPIC_NAME = "IMAGES";
-    private final String SUBSCRIPTION_NAME = "subImages";
 
     public ServiceManagement(int svcPort) throws IOException {
 

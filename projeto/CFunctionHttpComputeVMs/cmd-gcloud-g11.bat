@@ -1,0 +1,1 @@
+gcloud functions deploy cf-list-group-run-vms --project=cn2324-t2-g11 --region=europe-west1 --allow-unauthenticated --entry-point=functionhttp.Entrypoint --no-gen2 --runtime=java11 --trigger-http --source=target/deployment --service-account=computeengineaccount@cn2324-t2-g11.iam.gserviceaccount.com

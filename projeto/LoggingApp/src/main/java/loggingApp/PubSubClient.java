@@ -38,68 +38,68 @@ public class PubSubClient {
 //        } while (!((op >= 0 && op <= 7) || op == 99));
 //        return op;
 //    }
-
-    private static String read(String msg, Scanner input) {
-        System.out.println(msg);
-        return input.nextLine();
-    }
-
-    // Menu options
-    public static void listTopics() throws IOException {
-        TopicAdminClient topicAdmin = TopicAdminClient.create();
-        TopicAdminClient.ListTopicsPagedResponse res = topicAdmin.listTopics(ProjectName.of(PROJECT_ID));
-        for (Topic top : res.iterateAll()) {
-            System.out.println("Topic Name=" + top.getName());
-        }
-        topicAdmin.close();
-    }
-
-    public static void createNewTopic(String topicID) throws IOException {
-        TopicAdminClient topicAdmin = TopicAdminClient.create();
-        //ProjectTopicName projTopName=ProjectTopicName.of(PROJECT_ID, topicName);
-        TopicName projTopName = TopicName.ofProjectTopicName(PROJECT_ID, topicID);
-        topicAdmin.createTopic(projTopName);
-        topicAdmin.close();
-    }
-
-    public static void publishMessage(String topicID, String msg) throws Exception {
-        TopicName topicName = TopicName.ofProjectTopicName(PROJECT_ID, topicID);
-        Publisher publisher = Publisher.newBuilder(topicName).build();
-        ByteString msgData = ByteString.copyFromUtf8(msg);
-        PubsubMessage pubsubMessage = PubsubMessage.newBuilder()
-            .setData(msgData)
-            .putAttributes("key1", "value1")
-            .build();
-        ApiFuture<String> future = publisher.publish(pubsubMessage);
-        String msgID = future.get();
-        System.out.println("Message Published with ID=" + msgID);
-        publisher.shutdown();
-    }
-
-    public static void publishMultipleMessages(String topicID, int numMsg, String msgPrefix) throws Exception {
-        TopicName topicName = TopicName.ofProjectTopicName(PROJECT_ID, topicID);
-        Publisher publisher = Publisher.newBuilder(topicName).build();
-        for (int i = 0; i < numMsg; i++) {
-            ByteString msgData = ByteString.copyFromUtf8("Multiple:" + msgPrefix + (i + 1));
-            PubsubMessage pubsubMessage = PubsubMessage.newBuilder()
-                .setData(msgData)
-                .build();
-            ApiFuture<String> future = publisher.publish(pubsubMessage);
-            String msgID = future.get();
-            System.out.println("Message Published with ID=" + msgID);
-        }
-        publisher.shutdown();
-    }
-
-    public static void listExistingSubscriptions() throws IOException {
-        SubscriptionAdminClient subscriptionAdminClient = SubscriptionAdminClient.create();
-        SubscriptionAdminClient.ListSubscriptionsPagedResponse list = subscriptionAdminClient.listSubscriptions(ProjectName.of(PROJECT_ID));
-        System.out.println("Existing Subscriptions:");
-        for (Subscription sub : list.iterateAll()) {
-            System.out.println(sub.getName() + " (Topic Name:" + sub.getTopic() + ")");
-        }
-        subscriptionAdminClient.close();
-    }
+//
+//    private static String read(String msg, Scanner input) {
+//        System.out.println(msg);
+//        return input.nextLine();
+//    }
+//
+//    // Menu options
+//    public static void listTopics() throws IOException {
+//        TopicAdminClient topicAdmin = TopicAdminClient.create();
+//        TopicAdminClient.ListTopicsPagedResponse res = topicAdmin.listTopics(ProjectName.of(PROJECT_ID));
+//        for (Topic top : res.iterateAll()) {
+//            System.out.println("Topic Name=" + top.getName());
+//        }
+//        topicAdmin.close();
+//    }
+//
+//    public static void createNewTopic(String topicID) throws IOException {
+//        TopicAdminClient topicAdmin = TopicAdminClient.create();
+//        //ProjectTopicName projTopName=ProjectTopicName.of(PROJECT_ID, topicName);
+//        TopicName projTopName = TopicName.ofProjectTopicName(PROJECT_ID, topicID);
+//        topicAdmin.createTopic(projTopName);
+//        topicAdmin.close();
+//    }
+//
+//    public static void publishMessage(String topicID, String msg) throws Exception {
+//        TopicName topicName = TopicName.ofProjectTopicName(PROJECT_ID, topicID);
+//        Publisher publisher = Publisher.newBuilder(topicName).build();
+//        ByteString msgData = ByteString.copyFromUtf8(msg);
+//        PubsubMessage pubsubMessage = PubsubMessage.newBuilder()
+//            .setData(msgData)
+//            .putAttributes("key1", "value1")
+//            .build();
+//        ApiFuture<String> future = publisher.publish(pubsubMessage);
+//        String msgID = future.get();
+//        System.out.println("Message Published with ID=" + msgID);
+//        publisher.shutdown();
+//    }
+//
+//    public static void publishMultipleMessages(String topicID, int numMsg, String msgPrefix) throws Exception {
+//        TopicName topicName = TopicName.ofProjectTopicName(PROJECT_ID, topicID);
+//        Publisher publisher = Publisher.newBuilder(topicName).build();
+//        for (int i = 0; i < numMsg; i++) {
+//            ByteString msgData = ByteString.copyFromUtf8("Multiple:" + msgPrefix + (i + 1));
+//            PubsubMessage pubsubMessage = PubsubMessage.newBuilder()
+//                .setData(msgData)
+//                .build();
+//            ApiFuture<String> future = publisher.publish(pubsubMessage);
+//            String msgID = future.get();
+//            System.out.println("Message Published with ID=" + msgID);
+//        }
+//        publisher.shutdown();
+//    }
+//
+//    public static void listExistingSubscriptions() throws IOException {
+//        SubscriptionAdminClient subscriptionAdminClient = SubscriptionAdminClient.create();
+//        SubscriptionAdminClient.ListSubscriptionsPagedResponse list = subscriptionAdminClient.listSubscriptions(ProjectName.of(PROJECT_ID));
+//        System.out.println("Existing Subscriptions:");
+//        for (Subscription sub : list.iterateAll()) {
+//            System.out.println(sub.getName() + " (Topic Name:" + sub.getTopic() + ")");
+//        }
+//        subscriptionAdminClient.close();
+//    }
 
     public static void createSubscription(String topicID, String subscriptionID) {
         TopicName topicName = TopicName.of(PROJECT_ID, topicID);

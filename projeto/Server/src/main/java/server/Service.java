@@ -2,9 +2,11 @@ package server;
 
 import com.google.api.core.ApiFuture;
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.ReadChannel;
 import com.google.cloud.WriteChannel;
 import com.google.cloud.firestore.*;
 import com.google.cloud.pubsub.v1.Subscriber;
+import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
@@ -27,6 +29,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
+import java.nio.channels.WritableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
@@ -54,13 +58,16 @@ public class Service extends FunctionalServiceGrpc.FunctionalServiceImplBase{
     public final static String collectionName = "image-labels";
     public static Firestore db;
 
+    private StorageOptions storageOptions = StorageOptions.getDefaultInstance();
+    private Storage storage = storageOptions.getService();
+
     public Service(int svcPort) throws IOException {
 
         System.out.println("Service is available on port:" + svcPort);
 
         ////////////
-        StorageOptions storageOptions = StorageOptions.getDefaultInstance();
-        Storage storage = storageOptions.getService();
+//        StorageOptions storageOptions = StorageOptions.getDefaultInstance();
+//        Storage storage = storageOptions.getService();
         String projID = storageOptions.getProjectId();
         if (projID != null) System.out.println("Current Project ID:" + projID);
         else {
@@ -87,57 +94,6 @@ public class Service extends FunctionalServiceGrpc.FunctionalServiceImplBase{
     }
 
 
-    // recieves a stream of blocks (bytes) of an image, and shows it
-//    @Override
-//    public StreamObserver<ImageBlock> uploadImage(StreamObserver<TextMessage> responseObserver) {
-//        return new StreamObserver<ImageBlock>() {
-//            String filename;
-//            ByteArrayOutputStream imageStream = new ByteArrayOutputStream();
-//            int blockNumber = 0;
-//
-//            @Override
-//            public void onNext(ImageBlock imageBlock) {
-//
-//                filename = imageBlock.getFilename();
-//                ByteString imageBytes = imageBlock.getBlock().getImage();
-//
-//                try {
-//                    imageStream.write(imageBytes.toByteArray());
-//                    blockNumber++;
-//                } catch (IOException e) {
-//                    responseObserver.onError(e);
-//                }
-//            }
-//
-//            @Override
-//            public void onError(Throwable t) {
-//                System.err.println("Error receiving image: " + t.getMessage());
-//            }
-//
-//            @Override
-//            public void onCompleted() {
-//                try {
-//                    String filePath = filename;
-//                    System.out.println("Image received: " + filePath);
-//                    System.out.println("Number of blocks: " + blockNumber);
-//                    BufferedImage image = ImageIO.read(new ByteArrayInputStream(imageStream.toByteArray()));
-//                    String id = BLOB_PREFIX + filePath;
-//                    responseObserver.onNext(TextMessage.newBuilder().setTxt(id).build());
-//                    responseObserver.onCompleted();
-////                    displayImage(image);
-//                    // store in cloud storage
-//                    soper.uploadBlobToBucketImage(STORAGE_BUCKET, BLOB_PREFIX + filePath, image);
-//                    // send mensage to create labels
-//                    Map<String, String> atribs = new HashMap<String, String>();
-//                    atribs.put("bucket", STORAGE_BUCKET);
-//                    atribs.put("blob", BLOB_PREFIX + filePath);
-//                    PubSubClient.publishMessage(TOPIC_NAME, MessageType.PUBLISH.toString(), atribs);
-//                } catch (Exception e) {
-//                    responseObserver.onError(e);
-//                }
-//            }
-//        };
-//    }
 
     public boolean blobExists(String bucketName, String blobName) {
         return soper.blobExists(bucketName, blobName);
@@ -278,28 +234,74 @@ public class Service extends FunctionalServiceGrpc.FunctionalServiceImplBase{
     @Override
     public void downloadImageByFilename(TextMessage request, StreamObserver<ImageBlock> responseObserver) {
         System.out.println("downloadImageByFilename called!");
-        String filename = request.getTxt();
-        byte[] imageBytes = getImageBytes(filename);
-        if (imageBytes == null) {
-            responseObserver.onError(new StatusException(Status.NOT_FOUND.withDescription("Image not found")));
+//        String filename = request.getTxt();
+//        byte[] imageBytes = getImageBytes(filename);
+//        if (imageBytes == null) {
+//            responseObserver.onError(new StatusException(Status.NOT_FOUND.withDescription("Image not found")));
+//            return;
+//        }
+//        int blockSize = 1024;
+//        int blockNumber = 0;
+//        for (int i = 0; i < imageBytes.length; i += blockSize) {
+//            int end = Math.min(i + blockSize, imageBytes.length);
+//            byte[] block = new byte[end - i];
+//            System.arraycopy(imageBytes, i, block, 0, end - i);
+//            ImageBlock imageBlock = ImageBlock.newBuilder()
+//                    .setFilename(filename)
+//                    .setBlock(Block.newBuilder().setImage(ByteString.copyFrom(block)).build())
+//                    .build();
+//            responseObserver.onNext(imageBlock);
+//            blockNumber++;
+//        }
+//        responseObserver.onCompleted();
+//        System.out.println("Number of blocks: " + blockNumber);
+        try {
+            downloadImageByFilename1(STORAGE_BUCKET, request.getTxt(), request.getTxt(), responseObserver);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
+    public void downloadImageByFilename1(String bucketName, String blobName, String filename, StreamObserver<ImageBlock> responseObserver) throws IOException {
+        //System.out.println("download to: "+downloadTo);
+        int blockNumber = 0;
+        BlobId blobId = BlobId.of(bucketName, blobName);
+        Blob blob = storage.get(blobId);
+        if (blob == null) {
+            System.out.println("No such Blob exists !");
             return;
         }
-        int blockSize = 1024;
-        int blockNumber = 0;
-        for (int i = 0; i < imageBytes.length; i += blockSize) {
-            int end = Math.min(i + blockSize, imageBytes.length);
-            byte[] block = new byte[end - i];
-            System.arraycopy(imageBytes, i, block, 0, end - i);
-            ImageBlock imageBlock = ImageBlock.newBuilder()
-                    .setFilename(filename)
-                    .setBlock(Block.newBuilder().setImage(ByteString.copyFrom(block)).build())
-                    .build();
-            responseObserver.onNext(imageBlock);
-            blockNumber++;
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        try (ReadChannel reader = blob.reader()) {
+            WritableByteChannel channel = Channels.newChannel(baos);
+            ByteBuffer bytes = ByteBuffer.allocate(1024);
+            while (reader.read(bytes) > 0) {
+                bytes.flip();
+//                channel.write(bytes);
+
+                ////////
+                byte[] block = new byte[bytes.remaining()];
+                System.out.println("bytes.remaining(): "+bytes.remaining());
+                System.arraycopy(bytes.array(), 0, block, 0, bytes.remaining());
+                ImageBlock imageBlock = ImageBlock.newBuilder()
+                        .setFilename(filename)
+                        .setBlock(Block.newBuilder().setImage(ByteString.copyFrom(block)).build())
+                        .build();
+                responseObserver.onNext(imageBlock);
+                blockNumber++;
+
+                ////////
+
+                bytes.clear();
+            }
         }
+
         responseObserver.onCompleted();
         System.out.println("Number of blocks: " + blockNumber);
     }
+
 
     private byte[] getImageBytes(String filename) {
         try {
